@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name='Console Menu',
-    version='0.1-dev',
+    version='0.1.dev0',
     description='build interactive menus using ncurses',
     author='Tomasz Wesołowski',
     author_email='kosashi@gmail.com',
@@ -16,5 +16,6 @@ setup(
     ],
     tests_require=[
         'pytest',
+        'mock',
     ],
 )

@@ -1,1 +1,2 @@
-from .gui import GUI, Selection
+from .gui import GUI
+from .selection import Selection

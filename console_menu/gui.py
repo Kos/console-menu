@@ -1,5 +1,8 @@
-import curses
 import six
+import curses
+
+from .selection import Selection
+from .definitions import from_args, from_string
 
 stdscr = None
 
@@ -20,20 +23,17 @@ def stop():
     curses.endwin()
 
 
-class Selection(object):
-    def __init__(self, label, value=None):
-        self.label = str(label)
-        self.value = value if value is not None else label
-
-    def __repr__(self):
-        return 'Selection(%s)' % self.label
-
-
 class UserAbort(Exception):
     pass
 
 
 class GUI(object):
+    def __init__(self, mock=False):
+        if mock:
+            from mock import MagicMock
+            global curses
+            curses = MagicMock()
+
     def __enter__(self):
         start()
         return self
@@ -41,41 +41,17 @@ class GUI(object):
     def __exit__(self, *args):
         stop()
 
-    def select(self, str, *args):
-        def split_tokens(line):
-            while line:
-                a, b, line = line.partition('{}')
-                yield a
-                if b:
-                    yield b
+    def select_from_list(self, str, *args):
+        return self.select(from_args(str, *args))
 
-        def unpack_arg(arg):
-            if isinstance(arg, Selection):
-                yield arg
-            else:
-                arg = list(arg)
-                while arg:
-                    yield arg.pop(0)
-                    if arg:
-                        yield ' '
+    def select_from_string(self, string):
+        return self.select(from_string(string))
 
-        args = list(args)
-        lines = []
-        for line in str.splitlines():
-            line_arr = []
-            for token in split_tokens(line):
-                if token == '':
-                    continue
-                if token == '{}':
-                    line_arr.extend(unpack_arg(args.pop(0)))
-                else:
-                    line_arr.append(token)
-            lines.append(line_arr)
-        return self.select_list(lines)
-
-    def select_list(self, lines):
-        self.lines = lines
-        self.selections = [bit for line in lines for bit in line
+    def select(self, definition):
+        print('!!', definition)
+        self.definition = definition
+        # TODO definition.get_selections()
+        self.selections = [bit for line in definition for bit in line
                            if isinstance(bit, Selection)]
         self.selection = 0
         self.paint()
@@ -98,7 +74,7 @@ class GUI(object):
             self.selection = (self.selection + len(self.selections)) % len(self.selections)
             self.paint()
 
-        stdscr.erase()
+        stdscr.clear()
         if not self.selections:
             return None
         return self.selections[self.selection].value
@@ -106,7 +82,7 @@ class GUI(object):
     def paint(self):
         y, x = 0, 0
         selection_index = 0
-        for line in self.lines:
+        for line in self.definition:
             for bit in line:
                 if isinstance(bit, six.string_types):
                     stdscr.addstr(y, x, bit)
