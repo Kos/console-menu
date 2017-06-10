@@ -1,8 +1,9 @@
-import six
 import curses
 
+import six
+
+from .definitions import from_args, from_string, Definition
 from .selection import Selection
-from .definitions import from_args, from_string
 
 stdscr = None
 
@@ -28,11 +29,8 @@ class UserAbort(Exception):
 
 
 class GUI(object):
-    def __init__(self, mock=False):
-        if mock:
-            from mock import MagicMock
-            global curses
-            curses = MagicMock()
+    def __init__(self):
+        pass
 
     def __enter__(self):
         start()
@@ -48,30 +46,23 @@ class GUI(object):
         return self.select(from_string(string))
 
     def select(self, definition):
-        print('!!', definition)
+        if not isinstance(definition, Definition):
+            definition = Definition(definition)
+
         self.definition = definition
-        # TODO definition.get_selections()
-        self.selections = [bit for line in definition for bit in line
-                           if isinstance(bit, Selection)]
+        self.selections = definition.selections
         self.selection = 0
         self.paint()
         while True:
             key = stdscr.getch()
-            if key == curses.KEY_DOWN:
-                self.selection += 1
-            elif key == curses.KEY_UP:
-                self.selection -= 1
-            elif key == curses.KEY_RIGHT:
-                self.selection += 1
-            elif key == curses.KEY_LEFT:
-                self.selection -= 1
+            if key in (curses.KEY_DOWN, curses.KEY_UP, curses.KEY_RIGHT, curses.KEY_LEFT):
+                self.selection = self.definition.advance_selection(self.selection, key)
             elif key in [ord('q'), 27]:
                 raise UserAbort()
             elif key in [curses.KEY_ENTER, 10]:
                 break
             else:
                 continue
-            self.selection = (self.selection + len(self.selections)) % len(self.selections)
             self.paint()
 
         stdscr.clear()
@@ -82,7 +73,7 @@ class GUI(object):
     def paint(self):
         y, x = 0, 0
         selection_index = 0
-        for line in self.definition:
+        for line in self.definition.lines:
             for bit in line:
                 if isinstance(bit, six.string_types):
                     stdscr.addstr(y, x, bit)
