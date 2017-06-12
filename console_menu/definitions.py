@@ -81,7 +81,10 @@ class Definition(object):
 
     def get_closest(self, placed_selection):
         def distance_to_x(ps):
-            return abs(placed_selection.x - ps.x)
+            return (
+                abs(placed_selection.x - ps.x),
+                -ps.x # in case of a tie, prefer LARGER x
+            )
         for [y, line] in self.selections_per_line:
             if y <= placed_selection.y:
                 continue
@@ -90,7 +93,10 @@ class Definition(object):
 
     def get_closest_reverse(self, placed_selection):
         def distance_to_x(ps):
-            return abs(placed_selection.x - ps.x)
+            return (
+                abs(placed_selection.x - ps.x),
+                ps.x  # in case of a tie, prefer SMALLER x
+            )
         for [y, line] in reversed(list(self.selections_per_line)):
             if y >= placed_selection.y:
                 continue
