@@ -11,4 +11,4 @@ Long story short:
 - the function blocks until the user picks a selection
 - you can ask a question, obtain a result and move on:
 
-    value = GUI.select(from_string('''[Yes] [No]'''))
+      value = GUI.select(from_string('''[Yes] [No]'''))
